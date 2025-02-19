@@ -14,6 +14,8 @@ import re
 import time
 from selenium.webdriver.chrome.options import Options
 import os
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -35,17 +37,17 @@ def install_chromedriver():
     os.system("chmod +x /usr/local/bin/chromedriver")
 
 def setup_driver():
-    install_chrome()
-    install_chromedriver()
-    
     chrome_options = Options()
     chrome_options.add_argument('--headless')  # Run in headless mode
     chrome_options.add_argument('--disable-gpu')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--window-size=1920,1080')
-    
-    driver = webdriver.Chrome(executable_path="/usr/local/bin/chromedriver", options=chrome_options)
+
+    # Correct way to initialize WebDriver
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+
     return driver
 
 def clean_text(text):
