@@ -1,7 +1,6 @@
-Flask
-flask-cors
-selenium
-webdriver-manager
-beautifulsoup4
-requests
-gunicorn
+flask==2.0.1
+flask-cors==3.0.10
+selenium==4.10.0
+beautifulsoup4==4.9.3
+gunicorn==23.0.0
+webdriver-manager==3.8.6
