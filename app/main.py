@@ -2,20 +2,18 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import json
 import logging
+import os
+import time
+import re
+import subprocess
+from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from bs4 import BeautifulSoup
-import re
-import time
-from selenium.webdriver.chrome.options import Options
-import os
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -24,17 +22,33 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-def install_chrome():
+# Install Chrome & ChromeDriver
+def install_dependencies():
+    logger.info("Installing system dependencies...")
     os.system("apt-get update")
-    os.system("apt-get install -y wget curl unzip")
-    os.system("wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb")
+    os.system("apt-get install -y wget curl unzip libnss3 libgconf-2-4 libxi6 libgbm1")
+    logger.info("System dependencies installed.")
+
+def install_chrome():
+    logger.info("Installing Google Chrome...")
+    os.system("wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb")
     os.system("dpkg -i google-chrome-stable_current_amd64.deb || apt-get -fy install")
+    logger.info("Google Chrome installed.")
 
 def install_chromedriver():
-    os.system("CHROME_VERSION=$(google-chrome --version | awk '{print $3}')")
-    os.system("wget https://chromedriver.storage.googleapis.com/${CHROME_VERSION}/chromedriver_linux64.zip")
-    os.system("unzip chromedriver_linux64.zip -d /usr/local/bin/")
+    logger.info("Installing ChromeDriver...")
+    chrome_version = subprocess.getoutput("google-chrome --version").split()[-1]
+    chromedriver_url = f"https://chromedriver.storage.googleapis.com/{chrome_version}/chromedriver_linux64.zip"
+    
+    os.system(f"wget -q {chromedriver_url} -O chromedriver.zip")
+    os.system("unzip -o chromedriver.zip -d /usr/local/bin/")
     os.system("chmod +x /usr/local/bin/chromedriver")
+    logger.info("ChromeDriver installed.")
+
+# Ensure everything is installed before starting
+install_dependencies()
+install_chrome()
+install_chromedriver()
 
 def setup_driver():
     chrome_options = Options()
@@ -44,10 +58,9 @@ def setup_driver():
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--window-size=1920,1080')
 
-    # Correct way to initialize WebDriver
-    service = Service(ChromeDriverManager().install())
+    service = Service("/usr/local/bin/chromedriver")  # Use Service() instead of executable_path
     driver = webdriver.Chrome(service=service, options=chrome_options)
-
+    
     return driver
 
 def clean_text(text):
