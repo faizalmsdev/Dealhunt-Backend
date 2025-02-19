@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 import re
 import time
 from selenium.webdriver.chrome.options import Options
+import os
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +22,22 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
+def install_chrome():
+    os.system("apt-get update")
+    os.system("apt-get install -y wget curl unzip")
+    os.system("wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb")
+    os.system("dpkg -i google-chrome-stable_current_amd64.deb || apt-get -fy install")
+
+def install_chromedriver():
+    os.system("CHROME_VERSION=$(google-chrome --version | awk '{print $3}')")
+    os.system("wget https://chromedriver.storage.googleapis.com/${CHROME_VERSION}/chromedriver_linux64.zip")
+    os.system("unzip chromedriver_linux64.zip -d /usr/local/bin/")
+    os.system("chmod +x /usr/local/bin/chromedriver")
+
 def setup_driver():
+    install_chrome()
+    install_chromedriver()
+    
     chrome_options = Options()
     chrome_options.add_argument('--headless')  # Run in headless mode
     chrome_options.add_argument('--disable-gpu')
@@ -29,8 +45,7 @@ def setup_driver():
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--window-size=1920,1080')
     
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver = webdriver.Chrome(executable_path="/usr/local/bin/chromedriver", options=chrome_options)
     return driver
 
 def clean_text(text):
